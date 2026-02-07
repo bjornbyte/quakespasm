@@ -67,6 +67,10 @@ static accelbyte::memory::SharedPtr<accelbyte::user::User> g_current_user;
 // Settings instance
 static accelbyte::settings::InMemorySettings g_settings;
 
+// Matchmaking state
+static ab_matchmake_status_t g_matchmake_status = AB_MM_IDLE;
+static std::string g_match_ticket_id;
+
 static ABTaskRunner runner;
 //------------------------------------------------------------------------------
 // Device ID generation (Windows)
@@ -164,9 +168,10 @@ static void OnLoginSuccess(const accelbyte::memory::SharedPtr<accelbyte::user::U
     g_login_status = AB_LOGIN_SUCCESS;
     g_queue_ticket = nullptr;
 
-    runner.queue_task([](const accelbyte::String& access_token){
+    runner.queue_task([](const accelbyte::String& access_token, const accelbyte::String& displayName, const accelbyte::String& ab_namespace){
         Con_Printf("AccelByte: Login successful! Token: %s\n", access_token.c_str());
-    }, user->credential()->access_token().value());
+        Con_Printf("User Name: %s, Namespace: %s", displayName, ab_namespace );
+    }, user->credential()->access_token().value(), user->display_name(), user->user_data()->ab_namespace);
     // Con_Printf("AccelByte: Login successful! User: %s\n", g_display_name);
 }
 
@@ -236,6 +241,8 @@ void AB_Shutdown(void)
     g_user_id.clear();
     g_display_name.clear();
     g_error_message.clear();
+    g_matchmake_status = AB_MM_IDLE;
+    g_match_ticket_id.clear();
     g_initialized = false;
 
     Con_Printf("AccelByte: SDK shutdown\n");
@@ -269,13 +276,13 @@ void AB_LoginWithDeviceId(void)
     if (!client_secret || !client_secret[0])
     {
         Con_Printf("AccelByte: ab_client_secret not configured\n");
-        return;
+        // return;
     }
 
     // Configure settings
     g_settings.set_server_url(server_url);
     g_settings.set_client_id(client_id);
-    g_settings.set_client_secret(client_secret);
+    // g_settings.set_client_secret(client_secret);
 
     // Set as global settings
     accelbyte::settings::set_global_settings(g_settings);
@@ -432,6 +439,61 @@ void AB_UpdateUserStatItemValue(const char* stat_code, float value, int strategy
 int AB_IsInitialized(void)
 {
     return g_initialized ? 1 : 0;
+}
+
+void AB_CreateMatchTicket(void)
+{
+    if (!g_initialized)
+    {
+        Con_Printf("AccelByte: SDK not initialized\n");
+        return;
+    }
+
+    if (AB_GetLoginStatus() != AB_LOGIN_SUCCESS)
+    {
+        Con_Printf("AccelByte: Not logged in\n");
+        return;
+    }
+
+    {
+        std::lock_guard<std::mutex> lock(g_mutex);
+        g_matchmake_status = AB_MM_SEARCHING;
+        g_match_ticket_id.clear();
+    }
+
+    Con_Printf("AccelByte: Matchmaking ticket created, searching for a match...\n");
+}
+
+void AB_CancelMatchTicket(void)
+{
+    if (!g_initialized)
+    {
+        return;
+    }
+
+    {
+        std::lock_guard<std::mutex> lock(g_mutex);
+        g_matchmake_status = AB_MM_CANCELLED;
+        g_match_ticket_id.clear();
+    }
+
+    Con_Printf("AccelByte: Matchmaking cancelled\n");
+}
+
+ab_matchmake_status_t AB_GetMatchmakingStatus(void)
+{
+    std::lock_guard<std::mutex> lock(g_mutex);
+    return g_matchmake_status;
+}
+
+const char* AB_GetMatchTicketId(void)
+{
+    std::lock_guard<std::mutex> lock(g_mutex);
+    if (!g_match_ticket_id.empty())
+    {
+        return g_match_ticket_id.c_str();
+    }
+    return NULL;
 }
 
 void* get_current_user(void)

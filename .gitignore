@@ -3,3 +3,32 @@
 out/
 
 compile_commands.json
+
+# Build output directories
+Build-*/
+out/
+build/
+cmake-build-*/
+
+# Visual Studio
+.vs/
+*.vcxproj.user
+*.sln.DotSettings.user
+
+# Compiled object files and dependencies
+*.o
+*.d
+*.obj
+*.exe
+*.dll
+*.lib
+*.a
+*.so
+*.dylib
+
+# Editor and IDE files
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store

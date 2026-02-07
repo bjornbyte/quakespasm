@@ -288,6 +288,43 @@
   your specified build directory when using manual CMake commands.
 
 
+  AccelByte Integration (Optional):
+
+  QuakeSpasm can be built with optional AccelByte GameSDK support for online
+  multiplayer and player progression features. This requires the AccelByte
+  GameSDK libraries to be present in the thirdparties/accelbyte-gamesdk/
+  directory.
+
+  CMake Build Option:
+
+  -  -DUSE_ACCELBYTE_GAMESDK=ON/OFF - Enable AccelByte GameSDK support
+
+  Configuration:
+
+  When AccelByte support is enabled, you must configure these console
+  variables (CVars) before logging in:
+
+  -  ab_server_url - Base URL for the AccelByte server
+     Example: ab_server_url https://your-server-url
+
+  -  ab_client_id - OAuth 2.0 client ID from AccelByte
+     Example: ab_client_id your-client-id
+
+  -  ab_client_secret - OAuth 2.0 client secret from AccelByte
+     Example: ab_client_secret your-client-secret
+
+  These variables are automatically saved to config.cfg and will persist
+  between sessions, so you only need to set them once. You can also manually
+  edit your config.cfg file to add these values:
+
+    ab_server_url "https://your-server-url"
+    ab_client_id "your-client-id"
+    ab_client_secret "your-client-secret"
+
+  Note: The ab_server_url and namespace are determined by your AccelByte
+  environment configuration.
+
+
   Quake '2021 re-release':
 
   QuakeSpasm 0.94 has support for playing the 2021 re-release content:

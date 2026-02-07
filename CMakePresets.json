@@ -90,6 +90,21 @@
             }
         },
         {
+            "name": "msvc-x64-debug-no-ab",
+            "displayName": "MSVC x64 Debug no AccelByte GAME SDK",
+            "description": "Debug build using MSVC (64-bit)",
+            "inherits": "windows-msvc-base",
+            "binaryDir": "${sourceDir}/out/x64/windows/msvc/debug",
+            "architecture": {
+                "value": "x64",
+                "strategy": "external"
+            },
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "USE_ACCELBYTE_GAMESDK": "OFF"
+            }
+        },
+        {
             "name": "msvc-x64-release",
             "displayName": "MSVC x64 Release",
             "description": "Release build using MSVC (64-bit)",
@@ -114,7 +129,8 @@
                 "strategy": "external"
             },
             "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "Debug"
+                "CMAKE_BUILD_TYPE": "Debug",
+                "CMAKE_SIZEOF_VOID_P": "4"
             }
         },
         {
@@ -128,7 +144,8 @@
                 "strategy": "external"
             },
             "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "Release"
+                "CMAKE_BUILD_TYPE": "Release",
+                "CMAKE_SIZEOF_VOID_P": "4"
             }
         },
         {
@@ -152,7 +169,8 @@
             "binaryDir": "${sourceDir}/out/x64/windows/mingw/debug",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Debug",
-                "CMAKE_C_COMPILER": "gcc"
+                "CMAKE_C_COMPILER": "gcc",
+                "CMAKE_CXX_COMPILER": "g++"
             }
         },
         {
@@ -163,7 +181,8 @@
             "binaryDir": "${sourceDir}/out/x64/windows/mingw/release",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Release",
-                "CMAKE_C_COMPILER": "gcc"
+                "CMAKE_C_COMPILER": "gcc",
+                "CMAKE_CXX_COMPILER": "g++"
             }
         }
     ],

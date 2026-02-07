@@ -45,6 +45,7 @@ void M_Menu_Main_f (void);
 		void M_Menu_GameOptions_f (void);
 		void M_Menu_Search_f (void);
 		void M_Menu_ServerList_f (void);
+		void M_Menu_Matchmake_f (void);
 	void M_Menu_Options_f (void);
 		void M_Menu_Keys_f (void);
 		void M_Menu_Video_f (void);
@@ -62,6 +63,7 @@ void M_Main_Draw (void);
 		void M_GameOptions_Draw (void);
 		void M_Search_Draw (void);
 		void M_ServerList_Draw (void);
+		void M_Matchmake_Draw (void);
 	void M_Options_Draw (void);
 		void M_Keys_Draw (void);
 		void M_Video_Draw (void);
@@ -79,6 +81,7 @@ void M_Main_Key (int key);
 		void M_GameOptions_Key (int key);
 		void M_Search_Key (int key);
 		void M_ServerList_Key (int key);
+		void M_Matchmake_Key (int key);
 	void M_Options_Key (int key);
 		void M_Keys_Key (int key);
 		void M_Video_Key (int key);
@@ -894,7 +897,12 @@ const char *net_helpMessage [] =
   " Commonly used to play  ",
   " over the Internet, but ",
   " also used on a Local   ",
-  " Area Network.          "
+  " Area Network.          ",
+
+  " Use AccelByte's        ",
+  " matchmaking service to ",
+  " find and join matches. ",
+  "                        "
 };
 
 void M_Menu_Net_f (void)
@@ -903,7 +911,7 @@ void M_Menu_Net_f (void)
 	key_dest = key_menu;
 	m_state = m_net;
 	m_entersound = true;
-	m_net_items = 2;
+	m_net_items = 3;
 
 	if (m_net_cursor >= m_net_items)
 		m_net_cursor = 0;
@@ -935,6 +943,11 @@ void M_Net_Draw (void)
 	else
 		p = Draw_CachePic ("gfx/dim_tcp.lmp");
 	M_DrawTransPic (72, f, p);
+
+	f += 19;
+#ifdef USE_ACCELBYTE_GAMESDK
+	M_Print (72, f, "Match");
+#endif
 
 	f = (320-26*8)/2;
 	M_DrawTextBox (f, 96, 24, 4);
@@ -975,7 +988,18 @@ again:
 	case K_KP_ENTER:
 	case K_ABUTTON:
 		m_entersound = true;
-		M_Menu_LanConfig_f ();
+		switch (m_net_cursor)
+		{
+		case 0:
+		case 1:
+			M_Menu_LanConfig_f ();
+			break;
+		case 2:
+#ifdef USE_ACCELBYTE_GAMESDK
+			M_Menu_Matchmake_f ();
+#endif
+			break;
+		}
 		break;
 	}
 
@@ -2552,6 +2576,52 @@ void M_ServerList_Key (int k)
 }
 
 //=============================================================================
+/* MATCHMAKING MENU */
+
+#ifdef USE_ACCELBYTE_GAMESDK
+
+void M_Menu_Matchmake_f (void)
+{
+	IN_Deactivate(modestate == MS_WINDOWED);
+	key_dest = key_menu;
+	m_state = m_matchmake;
+	m_entersound = true;
+	AB_CreateMatchTicket();
+}
+
+
+void M_Matchmake_Draw (void)
+{
+	qpic_t	*p;
+
+	M_DrawTransPic (16, 4, Draw_CachePic ("gfx/qplaque.lmp") );
+	p = Draw_CachePic ("gfx/p_multi.lmp");
+	M_DrawPic ( (320-p->width)/2, 4, p);
+
+	M_DrawTextBox (60, 140, 25, 4);
+	M_PrintWhite (100, 156, "Searching for a match...");
+	M_Print (75, 172, "Press ESC to cancel matchmaking");
+}
+
+
+void M_Matchmake_Key (int k)
+{
+	switch (k)
+	{
+	case K_ESCAPE:
+	case K_BBUTTON:
+		AB_CancelMatchTicket();
+		M_Menu_Net_f ();
+		break;
+
+	default:
+		break;
+	}
+}
+
+#endif  /* USE_ACCELBYTE_GAMESDK */
+
+//=============================================================================
 /* Credits menu -- used by the 2021 re-release */
 
 void M_Menu_Credits_f (void)
@@ -2676,6 +2746,12 @@ void M_Draw (void)
 	case m_slist:
 		M_ServerList_Draw ();
 		break;
+
+#ifdef USE_ACCELBYTE_GAMESDK
+	case m_matchmake:
+		M_Matchmake_Draw ();
+		break;
+#endif
 	}
 
 	if (m_entersound)
@@ -2758,6 +2834,12 @@ void M_Keydown (int key)
 	case m_slist:
 		M_ServerList_Key (key);
 		return;
+
+#ifdef USE_ACCELBYTE_GAMESDK
+	case m_matchmake:
+		M_Matchmake_Key (key);
+		return;
+#endif
 	}
 }
 

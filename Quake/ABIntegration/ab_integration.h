@@ -19,6 +19,15 @@ typedef enum {
     AB_LOGIN_FAILED         /* Login failed */
 } ab_login_status_t;
 
+/* Matchmaking status enum */
+typedef enum {
+    AB_MM_IDLE,             /* Not matchmaking */
+    AB_MM_SEARCHING,        /* Searching for a match */
+    AB_MM_FOUND,            /* Match found */
+    AB_MM_CANCELLED,        /* Matchmaking cancelled */
+    AB_MM_ERROR             /* Matchmaking error */
+} ab_matchmake_status_t;
+
 /*
  * Initialize AccelByte SDK
  * Reads configuration from cvars: ab_server_url, ab_client_id, ab_client_secret
@@ -80,6 +89,28 @@ void AB_UpdateUserStatItemValue(const char* stat_code, float value, int strategy
  * Check if SDK is initialized
  */
 int AB_IsInitialized(void);
+
+/*
+ * Create a matchmaking ticket
+ * This is async - check status with AB_GetMatchmakingStatus()
+ */
+void AB_CreateMatchTicket(void);
+
+/*
+ * Cancel the active matchmaking ticket
+ */
+void AB_CancelMatchTicket(void);
+
+/*
+ * Get current matchmaking status
+ */
+ab_matchmake_status_t AB_GetMatchmakingStatus(void);
+
+/*
+ * Get the match ticket ID
+ * Returns NULL if no active ticket
+ */
+const char* AB_GetMatchTicketId(void);
 
 void* get_current_user(void);
 
