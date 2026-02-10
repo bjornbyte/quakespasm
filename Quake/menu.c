@@ -946,7 +946,7 @@ void M_Net_Draw (void)
 
 	f += 19;
 #ifdef USE_ACCELBYTE_GAMESDK
-	M_Print (72, f, "Match");
+	M_Print (72, f, "Matchmaking");
 #endif
 
 	f = (320-26*8)/2;
