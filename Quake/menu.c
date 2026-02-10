@@ -2593,13 +2593,37 @@ void M_Menu_Matchmake_f (void)
 void M_Matchmake_Draw (void)
 {
 	qpic_t	*p;
+	const char *status_text;
+	ab_matchmake_status_t status;
 
 	M_DrawTransPic (16, 4, Draw_CachePic ("gfx/qplaque.lmp") );
 	p = Draw_CachePic ("gfx/p_multi.lmp");
 	M_DrawPic ( (320-p->width)/2, 4, p);
 
 	M_DrawTextBox (60, 140, 25, 4);
-	M_PrintWhite (100, 156, "Searching for a match...");
+
+	// Get current matchmaking status and display appropriate message
+	status = AB_GetMatchmakingStatus();
+	switch (status)
+	{
+	case AB_MM_SEARCHING:
+		status_text = "Searching for a match...";
+		break;
+	case AB_MM_FOUND:
+		status_text = "Match found!";
+		break;
+	case AB_MM_CANCELLED:
+		status_text = "Matchmaking cancelled";
+		break;
+	case AB_MM_ERROR:
+		status_text = va("Error: %s", AB_GetMatchmakingErrorMessage());
+		break;
+	default:
+		status_text = "Initializing...";
+		break;
+	}
+
+	M_PrintWhite (100, 156, status_text);
 	M_Print (75, 172, "Press ESC to cancel matchmaking");
 }
 

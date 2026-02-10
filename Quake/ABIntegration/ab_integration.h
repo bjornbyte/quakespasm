@@ -112,6 +112,18 @@ ab_matchmake_status_t AB_GetMatchmakingStatus(void);
  */
 const char* AB_GetMatchTicketId(void);
 
+/*
+ * Get the match ID when match is found
+ * Returns NULL if match not found
+ */
+const char* AB_GetMatchId(void);
+
+/*
+ * Get error message for matchmaking failures
+ * Returns NULL if no error
+ */
+const char* AB_GetMatchmakingErrorMessage(void);
+
 void* get_current_user(void);
 
 #ifdef __cplusplus

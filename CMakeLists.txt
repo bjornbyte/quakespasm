@@ -308,6 +308,14 @@ target_link_libraries(quakespasm PRIVATE OpenGL::GL)
 if(USE_ACCELBYTE_GAMESDK)
     list(APPEND CMAKE_PREFIX_PATH "${CMAKE_SOURCE_DIR}/thirdparties/accelbyte-gamesdk")
     find_package(accelbyte-gamesdk REQUIRED)
+
+    # Find the cpp_web_socket library
+    find_library(ACCELBYTE_CPP_WEBSOCKET_LIB
+        NAMES abcnl-cpp_web_socket
+        PATHS "${CMAKE_SOURCE_DIR}/thirdparties/accelbyte-gamesdk/lib"
+        NO_DEFAULT_PATH
+    )
+
     target_link_libraries(quakespasm PRIVATE
         accelbyte-gamesdk::user
         accelbyte-gamesdk::lobby
@@ -315,6 +323,14 @@ if(USE_ACCELBYTE_GAMESDK)
         abcnl-codegen::social
         abcnl::curl_http_executor
     )
+
+    # Link cpp_web_socket library if found
+    if(ACCELBYTE_CPP_WEBSOCKET_LIB)
+        target_link_libraries(quakespasm PRIVATE ${ACCELBYTE_CPP_WEBSOCKET_LIB})
+    else()
+        message(WARNING "AccelByte cpp_web_socket library not found, lobby connections may fail")
+    endif()
+
     target_compile_definitions(quakespasm PRIVATE USE_ACCELBYTE_GAMESDK ACCELBYTE_BUILD_SHARED_DEFINE)
     target_compile_features(quakespasm PRIVATE cxx_std_20)
 endif()
