@@ -5,7 +5,14 @@
 
 #include "ab_integration.h"
 
-// AccelByte SDK headers
+// AccelByte SDK headers - Match2 first to avoid parse issues
+#include <accelbyte/match2/MatchTickets.h>
+#include <accelbyte/match2/match_tickets/CreateMatchTicket.h>
+#include <accelbyte/match2/match_tickets/DeleteMatchTicket.h>
+#include <accelbyte/match2/models/MatchTicketRequest.h>
+#include <accelbyte/match2/models/MatchTicket.h>
+
+// Other AccelByte SDK headers
 #include <accelbyte/common/String.h>
 #include <accelbyte/user/UserLogin.h>
 #include <accelbyte/user/User.h>
@@ -26,6 +33,7 @@
 #include <accelbyte/memory/memory.h>
 #include <accelbyte/web_socket/WebSocketFactory.h>
 #include <accelbyte/cpp_web_socket/CppWebSocketFactory.h>
+
 #include "ab_task_runner.h"
 
 // Standard library
@@ -631,24 +639,57 @@ void AB_CreateMatchTicket(void)
 
     Con_Printf("AccelByte: Creating match ticket for pool '%s'...\n", match_pool);
 
-    // TODO: Implement actual Match2 API call once SDK headers are fixed
-    // For now, just log the request and simulate the process
     std::string pool_copy(match_pool);
 
     g_match_ticket_future = std::async(std::launch::async, [pool_copy](){
-        // Simulate match ticket creation with a delay
-        // In production, this would call: accelbyte::match2::MatchTickets::create_match_ticket()
+        if (!g_current_user)
+        {
+            std::lock_guard<std::mutex> lock(g_mutex);
+            g_matchmake_status = AB_MM_ERROR;
+            g_matchmake_error = "User not authenticated";
+            Con_Printf("AccelByte: Cannot create match ticket - user not authenticated\n");
+            return;
+        }
 
-        std::lock_guard<std::mutex> lock(g_mutex);
+        try
+        {
+            // Create match ticket request
+            accelbyte::match2::match_tickets::CreateMatchTicket request;
+            request.body.match_pool = pool_copy.c_str();
+            // User latencies can be empty for now
+            // request.body.latencies = ...
+            // Optional attributes can be added here
+            // request.body.attributes = ...
 
-        // Generate a mock ticket ID
-        g_match_ticket_id = "mock-ticket-" + pool_copy;
+            const accelbyte::tls::SecurityAuthorization& authorization = *g_current_user;
 
-        Con_Printf("AccelByte: Match ticket created (stub), Pool: %s, ID: %s\n",
-                  pool_copy.c_str(), g_match_ticket_id.c_str());
+            Con_Printf("AccelByte: Submitting match ticket request for pool '%s'...\n", pool_copy.c_str());
 
-        // Ticket is now active and searching
-        // The lobby will receive OnMatchFound notification when a match is ready
+            accelbyte::match2::MatchTickets::create_match_ticket(
+                authorization,
+                request,
+                [pool_copy](const accelbyte::match2::model::MatchTicket& ticket) {
+                    std::lock_guard<std::mutex> lock(g_mutex);
+                    g_match_ticket_id = ticket.match_ticket_id.c_str();
+                    Con_Printf("AccelByte: Match ticket created successfully!\n");
+                    Con_Printf("AccelByte: Ticket ID: %s\n", ticket.match_ticket_id.c_str());
+                    Con_Printf("AccelByte: Queue time: %d\n", ticket.queue_time);
+                },
+                [pool_copy](const accelbyte::Error& error) {
+                    std::lock_guard<std::mutex> lock(g_mutex);
+                    g_matchmake_status = AB_MM_ERROR;
+                    g_matchmake_error = error.what().c_str();
+                    Con_Printf("AccelByte: Failed to create match ticket - %s\n", error.what().c_str());
+                }
+            );
+        }
+        catch (const std::exception& e)
+        {
+            std::lock_guard<std::mutex> lock(g_mutex);
+            g_matchmake_status = AB_MM_ERROR;
+            g_matchmake_error = e.what();
+            Con_Printf("AccelByte: Exception creating match ticket - %s\n", e.what());
+        }
     });
 }
 
@@ -675,12 +716,37 @@ void AB_CancelMatchTicket(void)
 
     Con_Printf("AccelByte: Cancelling match ticket %s...\n", ticket_id_copy.c_str());
 
-    // Delete the match ticket asynchronously
-    // TODO: Implement actual Match2 API call once SDK headers are fixed
     g_match_ticket_future = std::async(std::launch::async, [ticket_id_copy](){
-        // In production, this would call: accelbyte::match2::MatchTickets::delete_match_ticket()
+        if (!g_current_user)
+        {
+            Con_Printf("AccelByte: Cannot cancel match ticket - user not authenticated\n");
+            return;
+        }
 
-        Con_Printf("AccelByte: Match ticket %s cancelled (stub)\n", ticket_id_copy.c_str());
+        try
+        {
+            const accelbyte::tls::SecurityAuthorization& authorization = *g_current_user;
+
+            accelbyte::match2::match_tickets::DeleteMatchTicket request;
+            request.ticketid = ticket_id_copy.c_str();
+
+            Con_Printf("AccelByte: Submitting cancel request for ticket %s...\n", ticket_id_copy.c_str());
+
+            accelbyte::match2::MatchTickets::delete_match_ticket(
+                authorization,
+                request,
+                []() {
+                    Con_Printf("AccelByte: Match ticket cancelled successfully\n");
+                },
+                [ticket_id_copy](const accelbyte::Error& error) {
+                    Con_Printf("AccelByte: Error cancelling match ticket - %s\n", error.what().c_str());
+                }
+            );
+        }
+        catch (const std::exception& e)
+        {
+            Con_Printf("AccelByte: Exception cancelling match ticket - %s\n", e.what());
+        }
     });
 }
 
