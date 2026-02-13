@@ -24,6 +24,11 @@ typedef enum {
     AB_MM_IDLE,             /* Not matchmaking */
     AB_MM_SEARCHING,        /* Searching for a match */
     AB_MM_FOUND,            /* Match found */
+    AB_MM_JOINING,          /* Joining game session */
+    AB_MM_JOINED_AS_LEADER, /* Joined session, we are leader */
+    AB_MM_JOINED_AS_CLIENT, /* Joined session, waiting for host */
+    AB_MM_HOSTING,          /* Leader is starting listen server */
+    AB_MM_CONNECTING,       /* Client is connecting to host */
     AB_MM_CANCELLED,        /* Matchmaking cancelled */
     AB_MM_ERROR             /* Matchmaking error */
 } ab_matchmake_status_t;
@@ -139,6 +144,18 @@ int AB_GetMatchNumPlayers(void);
  * Get the number of teams in the found match
  */
 int AB_GetMatchNumTeams(void);
+
+/*
+ * Join the game session after match found
+ * Called automatically when match is found
+ */
+void AB_JoinSession(void);
+
+/*
+ * Check if we are the session leader
+ * Returns 1 if leader, 0 otherwise
+ */
+int AB_IsSessionLeader(void);
 
 void* get_current_user(void);
 
