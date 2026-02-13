@@ -2605,38 +2605,89 @@ void M_Menu_Matchmake_f (void)
 void M_Matchmake_Draw (void)
 {
 	qpic_t	*p;
-	const char *status_text;
 	ab_matchmake_status_t status;
+	const char *dots;
+	int		y;
 
 	M_DrawTransPic (16, 4, Draw_CachePic ("gfx/qplaque.lmp") );
 	p = Draw_CachePic ("gfx/p_multi.lmp");
 	M_DrawPic ( (320-p->width)/2, 4, p);
 
-	M_DrawTextBox (60, 140, 25, 4);
-
-	// Get current matchmaking status and display appropriate message
 	status = AB_GetMatchmakingStatus();
+
 	switch (status)
 	{
 	case AB_MM_SEARCHING:
-		status_text = "Searching for a match...";
+		M_DrawTextBox (60, 76, 25, 5);
+		y = 84;
+
+		/* Animated dots */
+		switch ((int)(realtime * 2) % 4)
+		{
+		case 0: dots = ""; break;
+		case 1: dots = "."; break;
+		case 2: dots = ".."; break;
+		default: dots = "..."; break;
+		}
+
+		M_PrintWhite (76, y, va("Searching for a match%s", dots));
+		y += 12;
+		M_Print (76, y, "Waiting for other players");
+		y += 16;
+		M_Print (76, y, "Press ESC to cancel");
 		break;
+
 	case AB_MM_FOUND:
-		status_text = "Match found!";
+		M_DrawTextBox (60, 76, 25, 7);
+		y = 84;
+
+		M_PrintWhite (76, y, "Match found!");
+		y += 16;
+		M_Print (76, y, va("Players: %d", AB_GetMatchNumPlayers()));
+		y += 8;
+		M_Print (76, y, va("Teams:   %d", AB_GetMatchNumTeams()));
+		y += 8;
+		if (AB_GetMatchId())
+			M_Print (76, y, va("Match:   %.22s", AB_GetMatchId()));
+		y += 16;
+		M_PrintWhite (76, y, "Connecting to server...");
 		break;
+
 	case AB_MM_CANCELLED:
-		status_text = "Matchmaking cancelled";
+		M_DrawTextBox (60, 76, 25, 3);
+		y = 84;
+
+		M_PrintWhite (76, y, "Matchmaking cancelled");
+		y += 16;
+		M_Print (76, y, "Press ESC to go back");
 		break;
+
 	case AB_MM_ERROR:
-		status_text = va("Error: %s", AB_GetMatchmakingErrorMessage());
+		M_DrawTextBox (60, 76, 25, 5);
+		y = 84;
+
+		M_PrintWhite (76, y, "Matchmaking error");
+		y += 12;
+		if (AB_GetMatchmakingErrorMessage())
+		{
+			const char *err = AB_GetMatchmakingErrorMessage();
+			M_Print (76, y, va("%.25s", err));
+			y += 8;
+			if (strlen(err) > 25)
+				M_Print (76, y, va("%.25s", err + 25));
+		}
+		y += 16;
+		M_Print (76, y, "Press ESC to go back");
 		break;
+
 	default:
-		status_text = "Initializing...";
+		M_DrawTextBox (60, 76, 25, 3);
+		y = 84;
+		M_PrintWhite (76, y, "Initializing...");
+		y += 16;
+		M_Print (76, y, "Press ESC to cancel");
 		break;
 	}
-
-	M_PrintWhite (100, 156, status_text);
-	M_Print (75, 172, "Press ESC to cancel matchmaking");
 }
 
 

@@ -124,6 +124,22 @@ const char* AB_GetMatchId(void);
  */
 const char* AB_GetMatchmakingErrorMessage(void);
 
+/*
+ * Get the match pool name from the found match
+ * Returns NULL if not available
+ */
+const char* AB_GetMatchPoolName(void);
+
+/*
+ * Get the number of players in the found match
+ */
+int AB_GetMatchNumPlayers(void);
+
+/*
+ * Get the number of teams in the found match
+ */
+int AB_GetMatchNumTeams(void);
+
 void* get_current_user(void);
 
 #ifdef __cplusplus

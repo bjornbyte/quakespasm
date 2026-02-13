@@ -88,6 +88,9 @@ static ab_matchmake_status_t g_matchmake_status = AB_MM_IDLE;
 static std::string g_match_ticket_id;
 static std::string g_matchmake_error;
 static std::string g_match_id;
+static std::string g_match_pool_name;
+static int g_match_num_players = 0;
+static int g_match_num_teams = 0;
 
 // Lobby connection
 static accelbyte::memory::SharedPtr<accelbyte::lobby::LobbyConnection> g_lobby_connection;
@@ -192,13 +195,24 @@ public:
         // Update matchmaking status and store match details
         g_matchmake_status = AB_MM_FOUND;
         g_match_id = message.match_id.c_str();
+        g_match_pool_name = message.match_pool.c_str();
+        g_match_num_teams = (int)message.teams.size();
+        g_match_num_players = 0;
+        for (size_t i = 0; i < message.teams.size(); i++)
+        {
+            g_match_num_players += (int)message.teams[i].size();
+        }
 
         // Queue console message on main thread
-        runner.queue_task([match_id = std::string(message.match_id.c_str())](
+        std::string match_id_copy = g_match_id;
+        int num_players = g_match_num_players;
+        int num_teams = g_match_num_teams;
+        runner.queue_task([match_id_copy, num_players, num_teams](
                           const accelbyte::String& dummy1,
                           const accelbyte::String& dummy2,
                           const accelbyte::String& dummy3){
-            Con_Printf("AccelByte: Match found! Match ID: %s\n", match_id.c_str());
+            Con_Printf("AccelByte: Match found! ID: %s (%d players, %d teams)\n",
+                match_id_copy.c_str(), num_players, num_teams);
         }, accelbyte::String(""), accelbyte::String(""), accelbyte::String(""));
     }
 };
@@ -360,6 +374,9 @@ void AB_Shutdown(void)
     g_match_ticket_id.clear();
     g_matchmake_error.clear();
     g_match_id.clear();
+    g_match_pool_name.clear();
+    g_match_num_players = 0;
+    g_match_num_teams = 0;
     g_initialized = false;
 
     Con_Printf("AccelByte: SDK shutdown\n");
@@ -463,14 +480,21 @@ void AB_Update(void)
         return;
     }
 
-    // Read lobby messages to process match found notifications
+    // Read lobby messages to process match found notifications.
+    // Grab connection pointer under lock, but call read() outside it
+    // because read() may invoke message handlers that also lock g_mutex.
     {
-        std::lock_guard<std::mutex> lock(g_mutex);
-        if (g_lobby_connection && g_lobby_connection->is_connected())
+        accelbyte::memory::SharedPtr<accelbyte::lobby::LobbyConnection> conn;
+        {
+            std::lock_guard<std::mutex> lock(g_mutex);
+            conn = g_lobby_connection;
+        }
+        if (conn && conn->is_connected())
         {
             try
             {
-                g_lobby_connection->read();
+                if (!conn->read())
+                    Con_Printf("AccelByte: WebSocket read failed\n");
             }
             catch (const std::exception& e)
             {
@@ -635,6 +659,9 @@ void AB_CreateMatchTicket(void)
         g_match_ticket_id.clear();
         g_matchmake_error.clear();
         g_match_id.clear();
+        g_match_pool_name.clear();
+        g_match_num_players = 0;
+        g_match_num_teams = 0;
     }
 
     Con_Printf("AccelByte: Creating match ticket for pool '%s'...\n", match_pool);
@@ -784,6 +811,28 @@ const char* AB_GetMatchmakingErrorMessage(void)
         return g_matchmake_error.c_str();
     }
     return NULL;
+}
+
+const char* AB_GetMatchPoolName(void)
+{
+    std::lock_guard<std::mutex> lock(g_mutex);
+    if (!g_match_pool_name.empty())
+    {
+        return g_match_pool_name.c_str();
+    }
+    return NULL;
+}
+
+int AB_GetMatchNumPlayers(void)
+{
+    std::lock_guard<std::mutex> lock(g_mutex);
+    return g_match_num_players;
+}
+
+int AB_GetMatchNumTeams(void)
+{
+    std::lock_guard<std::mutex> lock(g_mutex);
+    return g_match_num_teams;
 }
 
 void* get_current_user(void)
