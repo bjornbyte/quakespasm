@@ -25,7 +25,7 @@ class LogconfigConfiguration : public accelbyte::http::ModelObject
 public:
     enum class LogLevel : uint32_t {
         UNKNOWN,
-        DEBUG,
+        _DEBUG_,
         ERROR,
         FATAL,
         INFO,
