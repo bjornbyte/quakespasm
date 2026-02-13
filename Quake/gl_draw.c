@@ -498,6 +498,53 @@ void Draw_String (int x, int y, const char *str)
 }
 
 /*
+================
+Draw_StringScaled -- draw a string at arbitrary scale (1 = normal 8px, 2 = 16px, etc.)
+================
+*/
+void Draw_StringScaled (int x, int y, const char *str, int scale)
+{
+	int		row, col;
+	float	frow, fcol, size;
+	int		s;
+	int		num;
+
+	if (y <= -8 * scale)
+		return;
+
+	s = 8 * scale;
+
+	GL_Bind (char_texture);
+	glBegin (GL_QUADS);
+
+	while (*str)
+	{
+		num = ((unsigned char)*str) & 255;
+		if (num != 32)
+		{
+			row = num >> 4;
+			col = num & 15;
+			frow = row * 0.0625;
+			fcol = col * 0.0625;
+			size = 0.0625;
+
+			glTexCoord2f (fcol, frow);
+			glVertex2f (x, y);
+			glTexCoord2f (fcol + size, frow);
+			glVertex2f (x + s, y);
+			glTexCoord2f (fcol + size, frow + size);
+			glVertex2f (x + s, y + s);
+			glTexCoord2f (fcol, frow + size);
+			glVertex2f (x, y + s);
+		}
+		str++;
+		x += s;
+	}
+
+	glEnd ();
+}
+
+/*
 =============
 Draw_Pic -- johnfitz -- modified
 =============

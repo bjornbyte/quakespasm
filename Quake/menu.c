@@ -135,6 +135,18 @@ void M_PrintWhite (int cx, int cy, const char *str)
 	}
 }
 
+void M_PrintScaled (int cx, int cy, const char *str, int scale)
+{
+	char	buf[128];
+	int		i;
+
+	for (i = 0; *str && i < (int)sizeof(buf) - 1; i++, str++)
+		buf[i] = (*str) + 128;	/* brown/gold color, same as M_Print */
+	buf[i] = '\0';
+
+	Draw_StringScaled (cx, cy, buf, scale);
+}
+
 void M_DrawTransPic (int x, int y, qpic_t *pic)
 {
 	Draw_Pic (x, y, pic); //johnfitz -- simplified becuase centering is handled elsewhere
@@ -946,7 +958,7 @@ void M_Net_Draw (void)
 
 	f += 19;
 #ifdef USE_ACCELBYTE_GAMESDK
-	M_Print (72, f, "Matchmaking");
+	M_PrintScaled (72, f, "Matchmaking", 2);
 #endif
 
 	f = (320-26*8)/2;
