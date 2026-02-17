@@ -631,7 +631,11 @@ void M_Save_Key (int k)
 /* MULTIPLAYER MENU */
 
 int	m_multiplayer_cursor;
+#ifdef USE_ACCELBYTE_GAMESDK
+#define	MULTIPLAYER_ITEMS	4
+#else
 #define	MULTIPLAYER_ITEMS	3
+#endif
 
 
 void M_Menu_MultiPlayer_f (void)
@@ -652,6 +656,10 @@ void M_MultiPlayer_Draw (void)
 	p = Draw_CachePic ("gfx/p_multi.lmp");
 	M_DrawPic ( (320-p->width)/2, 4, p);
 	M_DrawTransPic (72, 32, Draw_CachePic ("gfx/mp_menu.lmp") );
+
+#ifdef USE_ACCELBYTE_GAMESDK
+	M_PrintScaled (72, 96, "Find Match", 2);
+#endif
 
 	f = (int)(realtime * 10)%6;
 
@@ -701,7 +709,15 @@ void M_MultiPlayer_Key (int key)
 			break;
 
 		case 2:
+#ifdef USE_ACCELBYTE_GAMESDK
 			M_Menu_Setup_f ();
+			break;
+
+		case 3:
+			M_Menu_Matchmake_f ();
+#else
+			M_Menu_Setup_f ();
+#endif
 			break;
 		}
 	}
@@ -909,12 +925,7 @@ const char *net_helpMessage [] =
   " Commonly used to play  ",
   " over the Internet, but ",
   " also used on a Local   ",
-  " Area Network.          ",
-
-  " Use AccelByte's        ",
-  " matchmaking service to ",
-  " find and join matches. ",
-  "                        "
+  " Area Network.          "
 };
 
 void M_Menu_Net_f (void)
@@ -923,7 +934,7 @@ void M_Menu_Net_f (void)
 	key_dest = key_menu;
 	m_state = m_net;
 	m_entersound = true;
-	m_net_items = 3;
+	m_net_items = 2;
 
 	if (m_net_cursor >= m_net_items)
 		m_net_cursor = 0;
@@ -955,11 +966,6 @@ void M_Net_Draw (void)
 	else
 		p = Draw_CachePic ("gfx/dim_tcp.lmp");
 	M_DrawTransPic (72, f, p);
-
-	f += 19;
-#ifdef USE_ACCELBYTE_GAMESDK
-	M_PrintScaled (72, f, "Matchmaking", 2);
-#endif
 
 	f = (320-26*8)/2;
 	M_DrawTextBox (f, 96, 24, 4);
@@ -1005,11 +1011,6 @@ again:
 		case 0:
 		case 1:
 			M_Menu_LanConfig_f ();
-			break;
-		case 2:
-#ifdef USE_ACCELBYTE_GAMESDK
-			M_Menu_Matchmake_f ();
-#endif
 			break;
 		}
 		break;
@@ -2638,7 +2639,7 @@ void M_Matchmake_Draw (void)
 		break;
 
 	case AB_MM_FOUND:
-		M_DrawTextBox (60, 76, 25, 7);
+		M_DrawTextBox (60, 76, 25, 5);
 		y = 84;
 
 		M_PrintWhite (76, y, "Match found!");
@@ -2646,11 +2647,72 @@ void M_Matchmake_Draw (void)
 		M_Print (76, y, va("Players: %d", AB_GetMatchNumPlayers()));
 		y += 8;
 		M_Print (76, y, va("Teams:   %d", AB_GetMatchNumTeams()));
-		y += 8;
-		if (AB_GetMatchId())
-			M_Print (76, y, va("Match:   %.22s", AB_GetMatchId()));
+		break;
+
+	case AB_MM_JOINING:
+		M_DrawTextBox (60, 76, 25, 3);
+		y = 84;
+
+		switch ((int)(realtime * 2) % 4)
+		{
+		case 0: dots = ""; break;
+		case 1: dots = "."; break;
+		case 2: dots = ".."; break;
+		default: dots = "..."; break;
+		}
+		M_PrintWhite (76, y, va("Joining session%s", dots));
 		y += 16;
-		M_PrintWhite (76, y, "Connecting to server...");
+		M_Print (76, y, "Please wait");
+		break;
+
+	case AB_MM_JOINED_AS_LEADER:
+		M_DrawTextBox (60, 76, 25, 3);
+		y = 84;
+
+		M_PrintWhite (76, y, "Session joined!");
+		y += 16;
+		M_Print (76, y, "Starting game...");
+		break;
+
+	case AB_MM_JOINED_AS_CLIENT:
+		M_DrawTextBox (60, 76, 25, 3);
+		y = 84;
+
+		switch ((int)(realtime * 2) % 4)
+		{
+		case 0: dots = ""; break;
+		case 1: dots = "."; break;
+		case 2: dots = ".."; break;
+		default: dots = "..."; break;
+		}
+		M_PrintWhite (76, y, "Session joined!");
+		y += 16;
+		M_Print (76, y, va("Waiting for host%s", dots));
+		break;
+
+	case AB_MM_HOSTING:
+		M_DrawTextBox (60, 76, 25, 3);
+		y = 84;
+
+		M_PrintWhite (76, y, "Starting server...");
+		y += 16;
+		M_Print (76, y, "Loading map");
+		break;
+
+	case AB_MM_CONNECTING:
+		M_DrawTextBox (60, 76, 25, 3);
+		y = 84;
+
+		switch ((int)(realtime * 2) % 4)
+		{
+		case 0: dots = ""; break;
+		case 1: dots = "."; break;
+		case 2: dots = ".."; break;
+		default: dots = "..."; break;
+		}
+		M_PrintWhite (76, y, va("Connecting to host%s", dots));
+		y += 16;
+		M_Print (76, y, "Please wait");
 		break;
 
 	case AB_MM_CANCELLED:
@@ -2698,7 +2760,7 @@ void M_Matchmake_Key (int k)
 	case K_ESCAPE:
 	case K_BBUTTON:
 		AB_CancelMatchTicket();
-		M_Menu_Net_f ();
+		M_Menu_MultiPlayer_f ();
 		break;
 
 	default:
